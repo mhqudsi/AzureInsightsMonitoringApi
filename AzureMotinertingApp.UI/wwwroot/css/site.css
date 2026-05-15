@@ -1,0 +1,100 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.dashboard-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-toolbar .dashboard-search {
+  width: min(520px, 80vw);
+}
+
+.dashboard-toolbar .dashboard-time-picker {
+  width: 240px;
+}
+
+.metric-card {
+  background: linear-gradient(180deg, rgba(13,110,253,0.04), rgba(13,110,253,0));
+}
+
+.metric-label {
+  font-size: 0.85rem;
+  color: var(--bs-secondary-color);
+}
+
+.metric-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.metric-sub {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--bs-secondary-color);
+}
+
+.metric-unit {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  margin-left: 0.15rem;
+}
+
+.endpoint-cell {
+  min-width: 260px;
+}
+
+table.dataTable thead th,
+table.dataTable thead td {
+  vertical-align: middle;
+}
+
+table.dataTable thead tr.dt-filters th {
+  padding-top: 0.35rem;
+  padding-bottom: 0.5rem;
+}
+
+table.dataTable thead tr.dt-filters input.form-control {
+  min-width: 110px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+.app-insights-card {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+a:hover .app-insights-card {
+  box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-2px);
+}

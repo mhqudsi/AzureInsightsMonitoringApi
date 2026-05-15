@@ -1,0 +1,57 @@
+﻿@model AzureMotinertingApp.UI.Models.HomeIndexViewModel
+
+<div class="dashboard-page mb-4">
+    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+        <div>
+            <h2 class="mb-1">Application Insights in your subscription</h2>
+            <div class="text-secondary">Resources discovered via Azure Resource Manager (same identity as your monitor integration).</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.InventoryError))
+    {
+        <div class="alert alert-warning" role="alert">
+            <div class="fw-semibold mb-1">Could not list Application Insights resources</div>
+            <div class="small">@Model.InventoryError</div>
+            <div class="small mt-2 text-muted">
+                Ensure the app registration used by AzureMonitor has <strong>Reader</strong> (or equivalent) on the subscription and that <strong>AzureMonitor:SubscriptionId</strong> or <strong>ResourceUri</strong> includes the subscription.
+            </div>
+        </div>
+    }
+    else if (Model.ApplicationInsightsResources.Count == 0)
+    {
+        <div class="alert alert-info" role="alert">No Application Insights components found in this subscription.</div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+            @foreach (var ai in Model.ApplicationInsightsResources)
+            {
+                <div class="col">
+                    <a class="text-decoration-none text-reset h-100" href="@ai.AzurePortalUrl" target="_blank" rel="noopener noreferrer">
+                        <div class="card shadow-sm h-100 border app-insights-card">
+                            <div class="card-body d-flex flex-column">
+                                <div class="fw-semibold mb-2">@ai.Name</div>
+                                <dl class="row small mb-0 flex-grow-1">
+                                    <dt class="col-sm-4 text-secondary">Resource group</dt>
+                                    <dd class="col-sm-8 mb-1 text-break">@ai.ResourceGroupName</dd>
+                                    <dt class="col-sm-4 text-secondary">Location</dt>
+                                    <dd class="col-sm-8 mb-1">@ai.Location</dd>
+                                    @if (!string.IsNullOrEmpty(ai.ApplicationId))
+                                    {
+                                        <dt class="col-sm-4 text-secondary">App ID</dt>
+                                        <dd class="col-sm-8 mb-1 text-break font-monospace small">@ai.ApplicationId</dd>
+                                    }
+                                </dl>
+                                <div class="mt-2 pt-2 border-top small text-primary">Open in Azure Portal →</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+
+<script src="~/js/dashboard.js"></script>

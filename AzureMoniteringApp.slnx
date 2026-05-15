@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="AzureMoniteringApp.Services/AzureMoniteringApp.Services.csproj" />
+  <Project Path="AzureMonitoringApp.API/AzureMonitoringApp.API.csproj" Id="5431e5e5-b604-4958-bf53-ee32f08bebd5" />
+  <Project Path="AzureMotinertingApp.UI/AzureMotinertingApp.UI.csproj" />
+</Solution>

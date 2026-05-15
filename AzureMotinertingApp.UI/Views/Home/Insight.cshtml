@@ -1,0 +1,91 @@
+@{
+    ViewData["Title"] = "Insight";
+    var endpoint = (ViewBag.Endpoint as string) ?? "";
+}
+
+<div class="dashboard-page">
+    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+        <div>
+            <div class="text-secondary mb-1">
+                <a asp-controller="Home" asp-action="Index" class="link-secondary text-decoration-none">← Back to Insights</a>
+            </div>
+            <h2 class="mb-1">Insight</h2>
+            <div class="text-secondary">Focused view for a single endpoint.</div>
+        </div>
+
+        <div class="dashboard-toolbar d-flex align-items-center gap-2 ms-auto flex-wrap">
+            <div class="input-group dashboard-time-picker">
+                <span class="input-group-text">Window</span>
+                <input id="durationValue" type="number" class="form-control" min="1" value="1" aria-label="Duration value" />
+                <select id="durationUnit" class="form-select" aria-label="Duration unit">
+                    <option value="m">Minutes</option>
+                    <option value="h" selected>Hours</option>
+                    <option value="d">Days</option>
+                </select>
+            </div>
+            <span id="selectedDurationLabel" class="badge text-bg-light border">1h</span>
+
+            <div class="input-group dashboard-search">
+                <span class="input-group-text">Endpoint</span>
+                <input id="endpointSearch" type="search" class="form-control" placeholder="Filter endpoints…" autocomplete="off" value="@endpoint" />
+                <button id="clearSearch" class="btn btn-outline-secondary" type="button" aria-label="Clear search">Clear</button>
+            </div>
+
+            <button id="refreshBtn" class="btn btn-primary d-inline-flex align-items-center gap-2" type="button">
+                <span id="refreshSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                <span>Refresh</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="pageAlert" class="alert alert-danger d-none" role="alert"></div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="fw-semibold">Summary</div>
+                <div class="text-secondary small">
+                    <span>Updated:</span>
+                    <span id="lastUpdated">—</span>
+                    <span class="mx-2">•</span>
+                    <span id="resultsHint">—</span>
+                </div>
+            </div>
+
+            <div id="summaryCards" class="mt-3"></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="fw-semibold">Endpoint analytics</div>
+                <div class="text-secondary small">Window: <span id="windowText">last 1h</span></div>
+            </div>
+        </div>
+
+        <div class="table-responsive p-2">
+            <table class="table table-hover align-middle w-100" id="endpointTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-nowrap">Endpoint</th>
+                        <th class="text-end text-nowrap">Total</th>
+                        <th class="text-end text-nowrap">Success</th>
+                        <th class="text-end text-nowrap">Fail</th>
+                        <th class="text-end text-nowrap">Avg (ms)</th>
+                        <th class="text-end text-nowrap">Max (ms)</th>
+                        <th class="text-nowrap">Last called</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="emptyState" class="p-4 text-center text-secondary d-none">
+            <div class="fw-semibold text-dark mb-1">No endpoints found</div>
+            <div>Try clearing the filter, or refresh to fetch the latest data.</div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/dashboard.js"></script>
