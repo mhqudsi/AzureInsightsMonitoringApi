@@ -1,4 +1,4 @@
-name: Build and Deploy ASP.NET Core Web API to Azure Web App Slot
+name: Build and Deploy ASP.NET Core Web API to Azure Web App Slot 
 
 on:
   push:
