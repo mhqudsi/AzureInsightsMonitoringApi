@@ -1,4 +1,4 @@
-name: Build and Deploy ASP.NET Core Web API to Azure Web App
+name: Build and Deploy ASP.NET Core Web API to Azure Web App Slot
 
 on:
   push:
@@ -11,6 +11,7 @@ permissions:
 
 env:
   AZURE_WEBAPP_NAME: AzureInsightsMonitoringApi
+  AZURE_SLOT_NAME: azureinsightsmonitoringapi-preprod
   DOTNET_VERSION: 10.0.x
   PROJECT_PATH: ./AzureMonitoringApp.API/AzureMonitoringApp.API.csproj
 
@@ -23,7 +24,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # STEP 2: Setup .NET
+      # STEP 2: Setup .NET SDK
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -37,7 +38,7 @@ jobs:
       - name: Build Project
         run: dotnet build ${{ env.PROJECT_PATH }} --configuration Release --no-restore
 
-      # STEP 5: Run tests (optional but recommended)
+      # STEP 5: Run tests (optional)
       - name: Run Tests
         run: dotnet test ${{ env.PROJECT_PATH }} --no-build --verbosity normal
         continue-on-error: true
@@ -54,9 +55,28 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # STEP 8: Deploy to Azure Web App
-      - name: Deploy to Azure Web App
+      # STEP 8: Verify slot exists
+      - name: Verify Azure Web App Slot
+        run: |
+          az webapp deployment slot list \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --query "[].name"
+
+      # STEP 9: Deploy to Azure Web App Slot
+      - name: Deploy to Azure Web App Slot
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'AzureInsightsMonitoringApi'
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: ${{ env.AZURE_SLOT_NAME }}
           package: ./publish
+
+      # STEP 10: Optional Slot Swap to Production
+      # Uncomment if you want auto swap after successful deployment
+      # - name: Swap Slot to Production
+      #   run: |
+      #     az webapp deployment slot swap \
+      #       --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+      #       --name ${{ env.AZURE_WEBAPP_NAME }} \
+      #       --slot ${{ env.AZURE_SLOT_NAME }} \
+      #       --target-slot production
