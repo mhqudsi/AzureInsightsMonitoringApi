@@ -59,8 +59,8 @@ jobs:
       - name: Verify Azure Web App Slot
         run: |
           az webapp deployment slot list \
-            --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name AzureInsightsMonitoringApi \
+            --resource-group insights-rg \
             --query "[].name"
 
       # STEP 9: Deploy to Azure Web App Slot
