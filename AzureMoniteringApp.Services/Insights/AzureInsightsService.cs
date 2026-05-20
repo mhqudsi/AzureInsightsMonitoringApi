@@ -136,6 +136,188 @@ requests
             };
         }
 
+        public async Task<List<TelemetryLogEntry>> GetEndpointLogsAsync(
+            string appId,
+            string endpointName,
+            DateTime fromUtc,
+            DateTime toUtc)
+        {
+            if (string.IsNullOrWhiteSpace(endpointName))
+            {
+                throw new ArgumentException("endpointName is required.", nameof(endpointName));
+            }
+
+            var (fromKql, toKql) = ToKqlDateRange(fromUtc, toUtc);
+            var endpointLiteral = EscapeKqlString(endpointName.Trim());
+
+            string query = $@"
+let fromDate = datetime({fromKql});
+let toDate = datetime({toKql});
+let targetEndpoint = '{endpointLiteral}';
+let matchedRequests = requests
+| where timestamp between (fromDate .. toDate)
+| where name == targetEndpoint;
+let operationIds = matchedRequests | distinct operation_Id;
+union
+    (matchedRequests | extend telemetryType = ""request""),
+    (exceptions
+        | where timestamp between (fromDate .. toDate)
+        | where operation_Id in (operationIds)
+        | extend telemetryType = ""exception""),
+    (traces
+        | where timestamp between (fromDate .. toDate)
+        | where operation_Id in (operationIds)
+        | extend telemetryType = ""trace"")
+| project
+    timestamp,
+    telemetryType,
+    name = coalesce(name, problemId, """"),
+    message = coalesce(tostring(outerMessage), tostring(message), tostring(url), name),
+    success,
+    resultCode,
+    duration,
+    operation_Id,
+    url
+| order by timestamp desc
+| take 500";
+
+            var json = await ExecuteKqlQueryAsync(appId, query);
+            return ParseTelemetryLogEntries(json);
+        }
+
+        private static List<TelemetryLogEntry> ParseTelemetryLogEntries(string json)
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("tables", out var tables)
+                || tables.ValueKind != JsonValueKind.Array
+                || tables.GetArrayLength() == 0)
+            {
+                return [];
+            }
+
+            var table = tables[0];
+            if (!table.TryGetProperty("columns", out var columnsEl)
+                || !table.TryGetProperty("rows", out var rowsEl))
+            {
+                return [];
+            }
+
+            var columnNames = new List<string>();
+            foreach (var column in columnsEl.EnumerateArray())
+            {
+                columnNames.Add(column.GetProperty("name").GetString() ?? string.Empty);
+            }
+
+            var entries = new List<TelemetryLogEntry>();
+            foreach (var row in rowsEl.EnumerateArray())
+            {
+                entries.Add(MapTelemetryLogRow(columnNames, row));
+            }
+
+            return entries;
+        }
+
+        private static TelemetryLogEntry MapTelemetryLogRow(IReadOnlyList<string> columnNames, JsonElement row)
+        {
+            var values = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < columnNames.Count && i < row.GetArrayLength(); i++)
+            {
+                values[columnNames[i]] = row[i];
+            }
+
+            return new TelemetryLogEntry
+            {
+                Timestamp = GetDateTime(values, "timestamp"),
+                TelemetryType = GetString(values, "telemetryType"),
+                Name = GetString(values, "name"),
+                Message = GetString(values, "message"),
+                Success = GetNullableBool(values, "success"),
+                ResultCode = GetNullableString(values, "resultCode"),
+                DurationMs = GetNullableDouble(values, "duration"),
+                OperationId = GetNullableString(values, "operation_Id"),
+                Url = GetNullableString(values, "url")
+            };
+        }
+
+        private static string EscapeKqlString(string value) =>
+    value.Replace("'", "''", StringComparison.Ordinal);
+
+        private static string GetString(IReadOnlyDictionary<string, JsonElement> values, string key)
+        {
+            if (!values.TryGetValue(key, out var element) || element.ValueKind == JsonValueKind.Null)
+            {
+                return string.Empty;
+            }
+
+            return element.ValueKind switch
+            {
+                JsonValueKind.String => element.GetString() ?? string.Empty,
+                JsonValueKind.Number => element.GetRawText(),
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                _ => element.GetRawText()
+            };
+        }
+
+        private static string? GetNullableString(IReadOnlyDictionary<string, JsonElement> values, string key)
+        {
+            var text = GetString(values, key);
+            return string.IsNullOrWhiteSpace(text) ? null : text;
+        }
+
+        private static bool? GetNullableBool(IReadOnlyDictionary<string, JsonElement> values, string key)
+        {
+            if (!values.TryGetValue(key, out var element) || element.ValueKind == JsonValueKind.Null)
+            {
+                return null;
+            }
+
+            return element.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String when bool.TryParse(element.GetString(), out var parsed) => parsed,
+                _ => null
+            };
+        }
+
+        private static double? GetNullableDouble(IReadOnlyDictionary<string, JsonElement> values, string key)
+        {
+            if (!values.TryGetValue(key, out var element) || element.ValueKind == JsonValueKind.Null)
+            {
+                return null;
+            }
+
+            if (element.ValueKind == JsonValueKind.Number && element.TryGetDouble(out var number))
+            {
+                return double.IsNaN(number) || double.IsInfinity(number) ? null : number;
+            }
+
+            if (element.ValueKind == JsonValueKind.String
+                && double.TryParse(element.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
+            {
+                return parsed;
+            }
+
+            return null;
+        }
+
+        private static DateTime GetDateTime(IReadOnlyDictionary<string, JsonElement> values, string key)
+        {
+            if (!values.TryGetValue(key, out var element) || element.ValueKind == JsonValueKind.Null)
+            {
+                return DateTime.MinValue;
+            }
+
+            if (element.ValueKind == JsonValueKind.String
+                && DateTime.TryParse(element.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
+            {
+                return parsed;
+            }
+
+            return element.GetDateTime();
+        }
+
         private static (string FromKql, string ToKql) ToKqlDateRange(DateTime fromUtc, DateTime toUtc)
         {
             var from = fromUtc.Kind == DateTimeKind.Unspecified

@@ -41,6 +41,31 @@ namespace AzureMonitoringApp.API.Controllers
             return Ok(await _azureInsightsService.GetEndpointInsightsAsync(appId, fromDate!.Value, toDate!.Value));
         }
 
+        [HttpGet("logs")]
+        public async Task<IActionResult> Logs(
+            string appId,
+            string endpoint,
+            DateTime? fromDate,
+            DateTime? toDate)
+        {
+            if (string.IsNullOrWhiteSpace(endpoint))
+            {
+                return new BadRequestObjectResult("endpoint query parameter is required.");
+            }
+
+            var validation = ValidateDateRange(fromDate, toDate);
+            if (validation != null)
+            {
+                return validation;
+            }
+
+            return Ok(await _azureInsightsService.GetEndpointLogsAsync(
+                appId,
+                endpoint,
+                fromDate!.Value,
+                toDate!.Value));
+        }
+
         private static BadRequestObjectResult? ValidateDateRange(DateTime? fromDate, DateTime? toDate)
         {
             if (!fromDate.HasValue || !toDate.HasValue)

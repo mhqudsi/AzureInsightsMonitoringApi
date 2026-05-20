@@ -11,5 +11,10 @@ namespace AzureMoniteringApp.Services.Insights
         Task<List<EndpointInsight>> GetEndpointInsightsAsync(string appId, DateTime fromUtc, DateTime toUtc);
         Task<string> ExecuteKqlQueryAsync(string appId, string query);
         Task<string> GetAccessTokenAsync();
+        Task<List<TelemetryLogEntry>> GetEndpointLogsAsync(
+            string appId,
+            string endpointName,
+            DateTime fromUtc,
+            DateTime toUtc);
     }
 }

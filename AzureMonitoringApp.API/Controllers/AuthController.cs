@@ -22,5 +22,11 @@ namespace AzureMonitoringApp.API.Controllers
         {
             return Ok(await _azureInsightsService.GetAccessTokenAsync());
         }
+
+        [HttpGet("gethi")]
+        public async Task<IActionResult> gethi()
+        {
+            return Ok("Hi");
+        }
     }
 }
